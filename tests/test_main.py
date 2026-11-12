@@ -35,3 +35,39 @@ def test_reading_a_total_does_not_add_a_player() -> None:
 def test_rejects_bad_input() -> None:
     assert client.post("/scores", json={"name": "", "points": 10}).status_code == 422
     assert client.get("/leaderboard?limit=0").status_code == 422
+
+
+def test_delete_existing_player_returns_204() -> None:
+    client.post("/scores", json={"name": "ana", "points": 10})
+    r = client.delete("/scores/ana")
+    assert r.status_code == 204
+    assert r.content == b""
+
+
+def test_delete_removes_player_from_leaderboard() -> None:
+    client.post("/scores", json={"name": "ana", "points": 10})
+    client.post("/scores", json={"name": "leo", "points": 30})
+    client.delete("/scores/ana")
+    top = client.get("/leaderboard").json()
+    assert all(row["name"] != "ana" for row in top)
+    assert {"name": "leo", "points": 30} in top
+
+
+def test_delete_removes_all_points() -> None:
+    client.post("/scores", json={"name": "ana", "points": 10})
+    client.delete("/scores/ana")
+    r = client.post("/scores", json={"name": "ana", "points": 5})
+    assert r.json() == {"name": "ana", "total": 5}
+
+
+def test_delete_unknown_player_returns_404() -> None:
+    assert client.delete("/scores/ghost").status_code == 404
+
+
+def test_delete_unknown_player_does_not_create_player() -> None:
+    client.delete("/scores/ghost")
+    assert client.get("/leaderboard").json() == []
+
+
+def test_delete_rejects_name_too_long() -> None:
+    assert client.delete("/scores/" + "a" * 41).status_code == 422

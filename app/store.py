@@ -16,6 +16,9 @@ class Store:
         ranked = sorted(self._scores.items(), key=lambda kv: kv[1], reverse=True)
         return [{"name": n, "points": p} for n, p in ranked[:limit]]
 
+    def remove(self, name: str) -> bool:
+        return self._scores.pop(name, None) is not None
+
     def reset(self) -> None:
         self._scores.clear()
 

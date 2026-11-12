@@ -1,14 +1,16 @@
 """Community-event leaderboard. Demo app for the software-factory talk."""
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Path, Response
 from pydantic import BaseModel, Field
 
 from app.store import STORE
+
+NAME_MAX = 40
 
 app = FastAPI(title="Leaderboard")
 
 
 class ScoreIn(BaseModel):
-    name: str = Field(min_length=1, max_length=40)
+    name: str = Field(min_length=1, max_length=NAME_MAX)
     points: int = Field(ge=0, le=1000)
 
 
@@ -21,6 +23,13 @@ def health() -> dict:
 def add_score(score: ScoreIn) -> dict:
     STORE.add(score.name, score.points)
     return {"name": score.name, "total": STORE.total(score.name)}
+
+
+@app.delete("/scores/{name}", status_code=204, response_class=Response)
+def delete_score(name: str = Path(min_length=1, max_length=NAME_MAX)) -> Response:
+    if not STORE.remove(name):
+        raise HTTPException(status_code=404, detail="player not found")
+    return Response(status_code=204)
 
 
 @app.get("/leaderboard")

@@ -12,6 +12,12 @@ class Store:
     def total(self, name: str) -> int:
         return self._scores.get(name, 0)  # reading must not create a 0-point player
 
+    def remove(self, name: str) -> bool:
+        if name not in self._scores:  # checking with `in` avoids creating a key
+            return False
+        del self._scores[name]
+        return True
+
     def top(self, limit: int) -> list[dict]:
         ranked = sorted(self._scores.items(), key=lambda kv: kv[1], reverse=True)
         return [{"name": n, "points": p} for n, p in ranked[:limit]]

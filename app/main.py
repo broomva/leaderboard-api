@@ -2,6 +2,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.audit import log_score
 from app.store import STORE
 
 app = FastAPI(title="Leaderboard")
@@ -19,6 +20,7 @@ def health() -> dict:
 
 @app.post("/scores")
 def add_score(score: ScoreIn) -> dict:
+    log_score(score.name, score.points)
     STORE.add(score.name, score.points)
     return {"name": score.name, "total": STORE.total(score.name)}
 
